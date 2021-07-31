@@ -10,7 +10,7 @@
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
 // ==/UserScript==
 
-let statsDivObj;
+let statHtmlElems;
 let settings;
 let time;
 
@@ -54,39 +54,72 @@ function getTimeString(hourMinSec) {
     return (h? h+"h " : "") + (min? min+"m " : "") + (sec? sec+"s" : "");
 }
 
-function getCurrentTimerString() {
+function setCurrentTimerStats() {
     const hourMinSec = splitToHourMinSec(time);
 
-    let timerString = '';
     if (settings.showTimer) {
-        timerString += 'Elapsed: ' + getTimeString(hourMinSec) + '\n';
+        statHtmlElems.timer.span.textContent =  getTimeString(hourMinSec);
     }
     const reviewsDoneNumber = parseInt(document.getElementById('completed-count').textContent);
     const reviewRate = reviewsDoneNumber/time; // reviews/sec
     if (settings.showRate) {
         const formattedRate = (reviewRate*60).toFixed(1); // reviews/min
-        timerString += 'Rate: ' + formattedRate + ' reviews/min\n';
+        statHtmlElems.rate.span.textContent = formattedRate + ' r/min';
     }
     const reviewsAvailableNumber = parseInt(document.getElementById('available-count').textContent);
     const timeRemaining = reviewsAvailableNumber / reviewRate; // seconds
     if (settings.showTimeRemaining) {
-        timerString += 'Est. Remaining: ' + getTimeString(splitToHourMinSec(timeRemaining));
+        let remainingStr = 'Est. ';
+        if (Number.isFinite(timeRemaining)) {
+            remainingStr += getTimeString(splitToHourMinSec(timeRemaining));
+        } else {
+            remainingStr += timeRemaining;
+        }
+        statHtmlElems.remaining.span.textContent = remainingStr;
     }
-    return timerString;
 }
 
-function generateStatsDiv() {
-    const statDiv = document.createElement('div');
-    statDiv.id = 'wkReviewTimerStats';
+function generateStatHtmlElems() {
+    // Timer time
+    const timerIcon = document.createElement('i');
+    timerIcon.className = 'icon-time';
     const timerSpan = document.createElement('span');
     timerSpan.id = 'wkReviewTimerTimerSpan';
-    timerSpan.textContent = 'Timer start';
-    statDiv.appendChild(timerSpan);
-    return { statDiv, timerSpan };
+    
+    // Review completion rate
+    const rateIcon = document.createElement('i');
+    rateIcon.className = 'icon-bolt';
+    const rateSpan = document.createElement('span');
+    rateSpan.id = 'wkReviewTimerRateSpan';
+
+    // Timer estimated remaining
+    const remainingIcon = document.createElement('i');
+    remainingIcon.className = 'icon-time';
+    const remainingSpan = document.createElement('span');
+    remainingSpan.id = 'wkReviewTimerRemainingSpan';
+
+    statHtmlElems = {
+        timer: {
+            icon: timerIcon,
+            span: timerSpan
+        },
+        rate: {
+            icon: rateIcon,
+            span: rateSpan
+        },
+        remaining: {
+            icon: remainingIcon,
+            span: remainingSpan
+        },
+        updateVisibility: function() {
+            this.timer.timerIcon.style.cssText = settings.showTimer ? "" : "display: none;";
+            this.timer.timerSpan.style.cssText = settings.showTimer ? "" : "display: none;";
+        }
+    }
 }
 
 const setStatsDivContentAndIncrementTimer = (intervalSec) => () => {
-    statsDivObj.timerSpan.textContent = getCurrentTimerString();
+    setCurrentTimerStats();
     incrementTimer(intervalSec);
 }
 
@@ -96,8 +129,13 @@ function startTimer (intervalSec) {
 
 function startReviewTimer() {
     // append statsDiv to header
-    const header = document.getElementById('summary-button');
-    header.appendChild(statsDivObj.statDiv);
+    const header = document.getElementById('stats');
+    header.appendChild(statHtmlElems.timer.icon);
+    header.appendChild(statHtmlElems.timer.span);
+    header.appendChild(statHtmlElems.rate.icon);
+    header.appendChild(statHtmlElems.rate.span);
+    header.appendChild(statHtmlElems.remaining.icon);
+    header.appendChild(statHtmlElems.remaining.span);
 
     // Init default settings
     if (!settings) {
@@ -116,7 +154,7 @@ function showLastReviewStats() {
 
 function main() {
     settings = getSettings();
-    statsDivObj = generateStatsDiv();
+    generateStatHtmlElems();
     if(/session$/.exec(window.location.href)) { // review page
         startReviewTimer();
     } else { // review summary page
