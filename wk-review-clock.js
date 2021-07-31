@@ -52,7 +52,7 @@ function setCurrentTimerStats() {
     if (wkOpenFrameWorkLoaded) {
         showTimer = wkof.settings[scriptId].showTimer;
         showRate = wkof.settings[scriptId].showRate;
-        showTimeRemaining = wkof.settings[scriptId].showRemaining;
+        showRemaining = wkof.settings[scriptId].showRemaining;
     }
     
     const hourMinSec = splitToHourMinSec(time);
