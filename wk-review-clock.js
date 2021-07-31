@@ -36,10 +36,10 @@ function getTimeString(hourMinSec, includeSec=true) {
     const hourString = h ? h+'h ' : '';
     
     const minuteZero = h ? '0' : '';
-    const minuteString = (h||min) ? (minuteZero+min).slice(-2)+'m ' : '';
+    const minuteString = (h||min||!includeSec) ? (minuteZero+min).slice(-2)+'m ' : '';
 
     const secondZero = (h||min) ? '0' : '';
-    const secondString = (h||min||sec) ? (secondZero+sec).slice(-2)+'s' : '';
+    const secondString = (secondZero+sec).slice(-2)+'s';
 
     return hourString + minuteString + (includeSec ? secondString : '');
 }
