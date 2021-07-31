@@ -15,12 +15,8 @@ let time;
 let wkOpenFrameWorkLoaded = false;
 
 const timerTimeKey = 'reviewTimerTime';
+const timerRateKey = 'reviewTimerRate';
 const scriptId = 'WKReviewClock'
-
-function incrementTimer(t) {
-    time += t;
-    window.localStorage.setItem(timerTimeKey, time);
-}
 
 function setTimer(t) {
     time = t;
@@ -34,9 +30,18 @@ function splitToHourMinSec(timeSec) {
     return {h, min, sec};
 }
 
-function getTimeString(hourMinSec) {
+function getTimeString(hourMinSec, includeSec=true) {
     const { h, min, sec } = hourMinSec;
-    return (h? h+"h " : "") + (min? min+"m " : "") + (sec? sec+"s" : "");
+
+    const hourString = h ? h+'h ' : '';
+    
+    const minuteZero = h ? '0' : '';
+    const minuteString = (h||min) ? (minuteZero+min).slice(-2)+'m ' : '';
+
+    const secondZero = (h||min) ? '0' : '';
+    const secondString = (h||min||sec) ? (secondZero+sec).slice(-2)+'s' : '';
+
+    return hourString + minuteString + (includeSec ? secondString : '');
 }
 
 function setCurrentTimerStats() {
@@ -70,12 +75,16 @@ function setCurrentTimerStats() {
     if (settings.showRemaining) {
         let remainingStr = 'Est. ';
         if (Number.isFinite(timeRemaining)) {
-            remainingStr += getTimeString(splitToHourMinSec(timeRemaining));
+            remainingStr += getTimeString(splitToHourMinSec(timeRemaining), false);
         } else {
-            remainingStr += timeRemaining;
+            remainingStr += '∞';
         }
         statHtmlElems.remaining.span.textContent = remainingStr;
     }
+
+    // Set time and rate to localstorage for diplaying them later
+    window.localStorage.setItem(timerTimeKey, time);
+    window.localStorage.setItem(timerRateKey, reviewRate);
 }
 
 function generateStatHtmlElems() {
@@ -84,7 +93,7 @@ function generateStatHtmlElems() {
     timerIcon.className = 'icon-time';
     const timerSpan = document.createElement('span');
     timerSpan.id = 'wkReviewTimerTimerSpan';
-    
+
     // Review completion rate
     const rateIcon = document.createElement('i');
     rateIcon.className = 'icon-bolt';
@@ -114,7 +123,7 @@ function generateStatHtmlElems() {
             if (!wkOpenFrameWorkLoaded) return;
             const settings = wkof.settings[scriptId];
             if (settings) {
-                const disp = (bool) => bool ? "" : "display: none;";
+                const disp = (bool) => bool ? '' : 'display: none;';
                 this.timer.icon.style.cssText = disp(settings.showTimer);
                 this.timer.span.style.cssText = disp(settings.showTimer);
                 this.rate.icon.style.cssText = disp(settings.showRate);
@@ -125,18 +134,7 @@ function generateStatHtmlElems() {
         }
     }
     statHtmlElems.updateVisibility();
-}
 
-const setStatsDivContentAndIncrementTimer = (intervalSec) => () => {
-    setCurrentTimerStats();
-    incrementTimer(intervalSec);
-}
-
-function startTimer (intervalSec) {
-    setInterval(setStatsDivContentAndIncrementTimer(intervalSec), intervalSec*1000);
-}
-
-function startReviewTimer() {
     // append statsDiv to header
     const header = document.getElementById('stats');
     header.appendChild(statHtmlElems.timer.icon);
@@ -145,7 +143,18 @@ function startReviewTimer() {
     header.appendChild(statHtmlElems.rate.span);
     header.appendChild(statHtmlElems.remaining.icon);
     header.appendChild(statHtmlElems.remaining.span);
+}
 
+const setStatsDivContentAndIncrementTimer = (intervalSec) => () => {
+    setCurrentTimerStats();
+    time += intervalSec;
+}
+
+function startTimer (intervalSec) {
+    setInterval(setStatsDivContentAndIncrementTimer(intervalSec), intervalSec*1000);
+}
+
+function startReviewTimer() {
     // Init timer to 0s
     setTimer(0);
 
@@ -170,19 +179,19 @@ function openSettings() {
                 type: 'checkbox',
                 label: 'Show timer',
                 default: true,
-                hover_tip: 'Asd.',
+                hover_tip: 'Show the elapsed time during a review session.',
             },
             showRate: {
                 type: 'checkbox',
                 label: 'Show review speed',
                 default: true,
-                hover_tip: 'Asd.',
+                hover_tip: 'Show the review rate (reviews/hour).',
             },
             showRemaining: {
                 type: 'checkbox',
                 label: 'Show remaining timer',
                 default: true,
-                hover_tip: 'Asd.',
+                hover_tip: 'Show the estimated remaining time based on the review rate and remaining items.',
             }
         }
     }
@@ -201,20 +210,20 @@ function installSettingsMenu() {
 
 async function main() {
     try {
-        const wkofModules = 'Settings,Menu';
-        wkof.include(wkofModules);
+        const wkof_modules = 'Settings,Menu';
+        wkof.include(wkof_modules);
         wkOpenFrameWorkLoaded = true;
-        await wkof.ready(wkofModules)
+        await wkof.ready(wkof_modules)
             .then(() => wkof.Settings.load(scriptId))
             .then(installSettingsMenu);
     } catch (err) {
         if (err instanceof ReferenceError) {
-            console.warn("Wanikani Open FrameWork required for adjusting WaniKani Review Clock settings.");
+            console.warn('Wanikani Open FrameWork required for adjusting WaniKani Review Clock settings.');
         } else {
             throw err;
         }
     }
-    
+
     if(/session$/.exec(window.location.href)) { // review page
         await generateStatHtmlElems();
         startReviewTimer();
