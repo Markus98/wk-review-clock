@@ -45,34 +45,31 @@ function getTimeString(hourMinSec, includeSec=true) {
 }
 
 function setCurrentTimerStats() {
-    const hourMinSec = splitToHourMinSec(time);
-
-    const settings = {
-        showTimer: true,
-        showRate: true,
-        showRemaining: true
-    }
-
+    // settings
+    let showTimer = true;
+    let showRate = true;
+    let showRemaining = true;
     if (wkOpenFrameWorkLoaded) {
-        settings.showTimer = wkof.settings[scriptId].showTimer;
-        settings.showRate = wkof.settings[scriptId].showRate;
-        settings.showTimeRemaining = wkof.settings[scriptId].showRemaining;
+        showTimer = wkof.settings[scriptId].showTimer;
+        showRate = wkof.settings[scriptId].showRate;
+        showTimeRemaining = wkof.settings[scriptId].showRemaining;
     }
-
-    if (settings.showTimer) {
+    
+    const hourMinSec = splitToHourMinSec(time);
+    if (showTimer) {
         statHtmlElems.timer.span.textContent =  getTimeString(hourMinSec);
     }
 
     const reviewsDoneNumber = parseInt(document.getElementById('completed-count').textContent);
     const reviewRate = reviewsDoneNumber/time; // reviews/sec
-    if (settings.showRate) {
+    if (showRate) {
         const formattedRate = (reviewRate*3600).toFixed(1); // reviews/hour
         statHtmlElems.rate.span.textContent = formattedRate + ' r/h';
     }
 
     const reviewsAvailableNumber = parseInt(document.getElementById('available-count').textContent);
     const timeRemaining = reviewsAvailableNumber / reviewRate; // seconds
-    if (settings.showRemaining) {
+    if (showRemaining) {
         let remainingStr = 'Est. ';
         if (Number.isFinite(timeRemaining)) {
             remainingStr += getTimeString(splitToHourMinSec(timeRemaining), false);
@@ -157,13 +154,30 @@ function startTimer (intervalSec) {
 function startReviewTimer() {
     // Init timer to 0s
     setTimer(0);
-
-    // Start the timer
+    // Start the timer with 1s interval
     startTimer(1.0);
 }
 
 function showLastReviewStats() {
+    const footer = document.getElementById('last-session-date');
 
+    const rateDiv = document.createElement('div');
+    const timeDiv = document.createElement('div');
+    const timeSpan = document.createElement('span');
+    const rateSpan = document.createElement('span');
+    timeDiv.appendChild(timeSpan);
+    rateDiv.appendChild(rateSpan);
+    
+    const lastTime = parseFloat(localStorage.getItem(timerTimeKey));
+    const lastTimeStr = getTimeString(splitToHourMinSec(lastTime));
+    const lastRate = localStorage.getItem(timerRateKey);
+    const lastRateStr = (parseFloat(lastRate)*3600).toFixed(1);
+
+    timeSpan.textContent = `Duration: ${lastTimeStr}`;
+    rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour`;
+
+    footer.appendChild(timeDiv);
+    footer.appendChild(rateDiv);
 }
 
 function openSettings() {
