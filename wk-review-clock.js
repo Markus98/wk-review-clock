@@ -17,6 +17,7 @@ let rateShowDelay;
 
 const timerTimeKey = 'reviewTimerTime';
 const timerRateKey = 'reviewTimerRate';
+const averageStatsKey = 'reviewRateAverageStats';
 const scriptId = 'WKReviewClock'
 
 function splitToHourMinSec(timeSec) {
@@ -154,10 +155,35 @@ function startTimer (intervalSec) {
     setInterval(setStatsAndUpdateTime, intervalSec*1000);
 }
 
+function getAverageStats() {
+    const statsObj = JSON.parse(localStorage.getItem(averageStatsKey));
+    if (statsObj) {
+        return statsObj;
+    } else {
+        // default
+        return {
+            rateSum: 0,
+            reviews: 0,
+            mostRecentAdded: false
+        };
+    }
+}
+
+function setAverageStats(statsObj) {
+    localStorage.setItem(averageStatsKey, JSON.stringify(statsObj));
+}
+
+function setAverageRecentAdded(bool) {
+    const stats = getAverageStats();
+    stats.mostRecentAdded = bool;
+    setAverageStats(stats);
+}
+
 function startReviewTimer() {
     // Start the timer
     const interval = window.wkof ? parseFloat(wkof.settings[scriptId].updateInterval) : 1.0;
     startTimer(interval);
+    setAverageRecentAdded(false);
 }
 
 function showLastReviewStats() {
@@ -169,20 +195,44 @@ function showLastReviewStats() {
     const rateSpan = document.createElement('span');
     timeDiv.appendChild(timeSpan);
     rateDiv.appendChild(rateSpan);
+
+    // Reset button
+    const resetAvgButton = document.createElement('button');
+    resetAvgButton.textContent = 'reset average';
+    resetAvgButton.style.cssText = 'font-size: 0.6em; color: inherit';
+    resetAvgButton.onclick = () => {
+        if (confirm('Are you sure you want to reset the average review rate?')) {
+            localStorage.removeItem(averageStatsKey);
+            location.reload();
+        }
+    };
     
     const lastTime = parseFloat(localStorage.getItem(timerTimeKey));
     const lastTimeStr = getTimeString(splitToHourMinSec(lastTime));
-    const lastRate = localStorage.getItem(timerRateKey);
-    const lastRateStr = (parseFloat(lastRate)*3600).toFixed(1);
+    const lastRate = parseFloat(localStorage.getItem(timerRateKey));
+    const lastRateStr = (lastRate*3600).toFixed(1);
+
+    // Average rate
+    const avgStats = getAverageStats();
+    const ignoreInterval = 240; // 3 min
+    if (!avgStats.mostRecentAdded && lastTime > ignoreInterval) {
+        avgStats.rateSum += lastRate;
+        avgStats.reviews += 1;
+        avgStats.mostRecentAdded = true;
+        setAverageStats(avgStats);
+    }
+    const avgRate = avgStats.rateSum / avgStats.reviews;
+    const avgRateStr = isNaN(avgRate) ? '—' : (parseFloat(avgRate)*3600).toFixed(1);
 
     timeSpan.textContent = `Duration: ${lastTimeStr}`;
-    rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour`;
+    rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour (avg. ${avgRateStr} r/h) (${avgStats.reviews} reviews)`;
 
     footer.appendChild(timeDiv);
     footer.appendChild(rateDiv);
+    footer.appendChild(resetAvgButton);
 }
 
-// TODO: save and calculate average speed
+// TODO: set ignore period
 function openSettings() {
     var config = {
         script_id: scriptId,
