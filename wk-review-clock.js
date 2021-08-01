@@ -216,7 +216,7 @@ function showLastReviewStats() {
     timeDiv.appendChild(timeSpan);
     rateDiv.appendChild(rateSpan);
     const estimatedTimeDiv = document.createElement('div');
-    estimatedTimeDiv.style.cssText = 'text-align: center; margin-top: -75%; font-size: 0.6em;';
+    estimatedTimeDiv.style.cssText = 'text-align: center; margin-top: -88%; font-size: 0.6em;';
     
     // Reset button
     const resetAvgButton = document.createElement('button');
