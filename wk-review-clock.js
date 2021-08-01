@@ -12,16 +12,12 @@
 
 let statHtmlElems;
 let time;
+let startTime;
 let rateShowDelay;
 
 const timerTimeKey = 'reviewTimerTime';
 const timerRateKey = 'reviewTimerRate';
 const scriptId = 'WKReviewClock'
-
-function setTimer(t) {
-    time = t;
-    window.localStorage.setItem(timerTimeKey, t);
-}
 
 function splitToHourMinSec(timeSec) {
     const h = Math.floor( timeSec/60/60 );
@@ -147,18 +143,17 @@ function generateStatHtmlElems() {
     header.appendChild(statHtmlElems.remaining.span);
 }
 
-const setStatsDivContentAndIncrementTimer = (intervalSec) => () => {
+function setStatsAndUpdateTime() {
     setCurrentTimerStats();
-    time += intervalSec;
+    time = Math.floor((new Date() - startTime)/1000);
 }
 
 function startTimer (intervalSec) {
-    setInterval(setStatsDivContentAndIncrementTimer(intervalSec), intervalSec*1000);
+    startTime = new Date();
+    setInterval(setStatsAndUpdateTime, intervalSec*1000);
 }
 
 function startReviewTimer() {
-    // Init timer to 0s
-    setTimer(0);
     // Start the timer with 1s interval
     startTimer(1.0);
 }
@@ -186,7 +181,7 @@ function showLastReviewStats() {
 }
 
 // TODO: set update interval?
-// TODO: change to timestamp
+// TODO: save and calculate average speed
 function openSettings() {
     var config = {
         script_id: scriptId,
