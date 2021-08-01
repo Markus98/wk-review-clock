@@ -189,6 +189,14 @@ function startReviewTimer() {
 function showLastReviewStats() {
     const footer = document.getElementById('last-session-date');
 
+    let ignoreInterval = 240; // 3 min default
+    let showEstimatedSessionTime = true;
+    // Get settings if WK Open Framework is installed
+    if (window.wkof) {
+        ignoreInterval = parseFloat(wkof.settings[scriptId].averageIgnorePeriod)*60;
+        showEstimatedSessionTime = wkof.settings[scriptId].showTimeEstimate;
+    }
+
     // Create divs and spans for stats in footer
     const rateDiv = document.createElement('div');
     const timeDiv = document.createElement('div');
@@ -218,7 +226,6 @@ function showLastReviewStats() {
 
     // Average rate
     const avgStats = getAverageStats();
-    const ignoreInterval = 240; // 3 min
     if (!avgStats.mostRecentAdded && lastTime > ignoreInterval && lastRate > 0) {
         avgStats.rateSum += lastRate;
         avgStats.reviews += 1;
@@ -237,7 +244,7 @@ function showLastReviewStats() {
     // Set stats text content
     timeSpan.textContent = `Duration: ${lastTimeStr}`;
     rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour (avg. ${avgRateStr} r/h) (${avgStats.reviews} sessions)`;
-    estimatedTimeDiv.textContent = isNaN(estimatedTime) ? '' : `~${estimatedTimeStr}`;
+    estimatedTimeDiv.textContent = !showEstimatedSessionTime || isNaN(estimatedTime) ? '' : `~${estimatedTimeStr}`;
 
     // Append html elements to page
     footer.appendChild(timeDiv);
@@ -331,7 +338,7 @@ function openSettings() {
                         label: 'Minimum session duration to include in the review rate average (min)',
                         hover_tip: 'The shortest duration of a session that gets included in the review rate average on the summary page.',
                         default: 3,
-                        min: 1
+                        min: 0
                     }
                 }
             }
