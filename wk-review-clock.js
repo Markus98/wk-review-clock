@@ -144,7 +144,7 @@ function generateStatHtmlElems() {
 }
 
 function setStatsAndUpdateTime() {
-    time = Math.floor((new Date() - startTime)/1000);
+    time = (new Date() - startTime)/1000;
     setCurrentTimerStats();
 }
 
@@ -215,7 +215,7 @@ function openSettings() {
                 type: 'number',
                 label: 'Update interval (s)',
                 default: 1.0,
-                min: 0.1,
+                min: 0.03,
                 max: 60
             },
             rateShowDelayGroup: {
