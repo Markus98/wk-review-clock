@@ -189,13 +189,16 @@ function startReviewTimer() {
 function showLastReviewStats() {
     const footer = document.getElementById('last-session-date');
 
+    // Create divs and spans for stats in footer
     const rateDiv = document.createElement('div');
     const timeDiv = document.createElement('div');
     const timeSpan = document.createElement('span');
     const rateSpan = document.createElement('span');
     timeDiv.appendChild(timeSpan);
     rateDiv.appendChild(rateSpan);
-
+    const estimatedTimeDiv = document.createElement('div');
+    estimatedTimeDiv.style.cssText = 'text-align: center; margin-top: -75%; font-size: 0.6em;';
+    
     // Reset button
     const resetAvgButton = document.createElement('button');
     resetAvgButton.textContent = 'reset average';
@@ -207,6 +210,7 @@ function showLastReviewStats() {
         }
     };
     
+    // Saved time and rate
     const lastTime = parseFloat(localStorage.getItem(timerTimeKey));
     const lastTimeStr = getTimeString(splitToHourMinSec(lastTime));
     const lastRate = parseFloat(localStorage.getItem(timerRateKey));
@@ -215,24 +219,35 @@ function showLastReviewStats() {
     // Average rate
     const avgStats = getAverageStats();
     const ignoreInterval = 240; // 3 min
-    if (!avgStats.mostRecentAdded && lastTime > ignoreInterval) {
+    if (!avgStats.mostRecentAdded && lastTime > ignoreInterval && lastRate > 0) {
         avgStats.rateSum += lastRate;
         avgStats.reviews += 1;
         avgStats.mostRecentAdded = true;
         setAverageStats(avgStats);
     }
-    const avgRate = avgStats.rateSum / avgStats.reviews;
+    const avgRate = avgStats.rateSum / avgStats.reviews; // reviews/second
     const avgRateStr = isNaN(avgRate) ? '—' : (parseFloat(avgRate)*3600).toFixed(1);
 
+    const reviewCountSpan = document.getElementById('review-queue-count');
+    // Estimate time for current reviews
+    const numOfReviews = parseInt(reviewCountSpan.textContent);
+    const estimatedTime = numOfReviews / avgRate;
+    const estimatedTimeStr = getTimeString(splitToHourMinSec(estimatedTime), false);
+    
+    // Set stats text content
     timeSpan.textContent = `Duration: ${lastTimeStr}`;
-    rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour (avg. ${avgRateStr} r/h) (${avgStats.reviews} reviews)`;
+    rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour (avg. ${avgRateStr} r/h) (${avgStats.reviews} sessions)`;
+    estimatedTimeDiv.textContent = isNaN(estimatedTime) ? '' : `~${estimatedTimeStr}`;
 
+    // Append html elements to page
     footer.appendChild(timeDiv);
     footer.appendChild(rateDiv);
     footer.appendChild(resetAvgButton);
+    reviewCountSpan.appendChild(estimatedTimeDiv);
 }
 
 // TODO: set ignore period
+// TODO: setting for showing the estimated time
 function openSettings() {
     var config = {
         script_id: scriptId,
