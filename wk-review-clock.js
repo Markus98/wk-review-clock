@@ -20,6 +20,17 @@ const timerRateKey = 'reviewTimerRate';
 const averageStatsKey = 'reviewRateAverageStats';
 const scriptId = 'WKReviewClock'
 
+const defaultSettings = {
+    showTimer: true,
+    showRate: true,
+    showRemaining: true,
+    updateInterval: 1.0,
+    enableRateShowDelay: false,
+    rateShowDelay: 5,
+    showTimeEstimate: true,
+    averageIgnorePeriod: 3
+};
+
 function splitToHourMinSec(timeSec) {
     const h = Math.floor( timeSec/60/60 );
     const min = Math.floor( (timeSec - (h*60*60)) / 60 );
@@ -43,9 +54,9 @@ function getTimeString(hourMinSec, includeSec=true) {
 
 function setCurrentTimerStats() {
     // settings
-    let showTimer = true;
-    let showRate = true;
-    let showRemaining = true;
+    let showTimer = defaultSettings.showTimer;
+    let showRate = defaultSettings.showRate;
+    let showRemaining = defaultSettings.showRemaining;
     let hideRateRemaining = false;
     if (window.wkof) {
         showTimer = wkof.settings[scriptId].showTimer;
@@ -189,8 +200,8 @@ function startReviewTimer() {
 function showLastReviewStats() {
     const footer = document.getElementById('last-session-date');
 
-    let ignoreInterval = 240; // 3 min default
-    let showEstimatedSessionTime = true;
+    let ignoreInterval = defaultSettings.averageIgnorePeriod*60;
+    let showEstimatedSessionTime = defaultSettings.showTimeEstimate;
     // Get settings if WK Open Framework is installed
     if (window.wkof) {
         ignoreInterval = parseFloat(wkof.settings[scriptId].averageIgnorePeriod)*60;
@@ -253,8 +264,6 @@ function showLastReviewStats() {
     reviewCountSpan.appendChild(estimatedTimeDiv);
 }
 
-// TODO: set ignore period
-// TODO: setting for showing the estimated time
 function openSettings() {
     var config = {
         script_id: scriptId,
@@ -272,19 +281,19 @@ function openSettings() {
                     showTimer: {
                         type: 'checkbox',
                         label: 'Show elapsed time',
-                        default: true,
+                        default: defaultSettings.showTimer,
                         hover_tip: 'Show the elapsed time during a review session.',
                     },
                     showRate: {
                         type: 'checkbox',
                         label: 'Show review rate',
-                        default: true,
+                        default: defaultSettings.showRate,
                         hover_tip: 'Show the review rate (reviews/hour).',
                     },
                     showRemaining: {
                         type: 'checkbox',
                         label: 'Show remaining time estimate',
-                        default: true,
+                        default: defaultSettings.showRemaining,
                         hover_tip: 'Show the estimated remaining time based on the review rate and remaining items.',
                     },
                     divider1: {
@@ -294,7 +303,7 @@ function openSettings() {
                         type: 'number',
                         label: 'Statistics update interval (s)',
                         hover_tip: 'How often the statistic numbers should be updated (x second intervals).',
-                        default: 1.0,
+                        default: defaultSettings.updateInterval,
                         min: 0.03,
                         max: 60
                     },
@@ -309,14 +318,14 @@ function openSettings() {
                             enableRateShowDelay: {
                                 type: 'checkbox',
                                 label: 'Enabled',
-                                default: false,
+                                default: defaultSettings.enableRateShowDelay,
                                 hover_tip: 'Enable a delay in showing the rate and time estimate.'
                             },
                             rateShowDelay: {
                                 type: 'number',
                                 label: 'Duration (min)',
                                 hover_tip: 'The number of minutes that the review rate and time estimate should be hidden for at the beginning of a session.',
-                                default: 5,
+                                default: defaultSettings.rateShowDelay,
                                 min: 1
                             }
                         }
@@ -330,14 +339,14 @@ function openSettings() {
                     showTimeEstimate: {
                         type: 'checkbox',
                         label: 'Show review time estimate on summary page',
-                        default: true,
+                        default: defaultSettings.showTimeEstimate,
                         hover_tip: 'Show the estimated time to complete all items in the queue on the summary page. Based on average review rate.',
                     },
                     averageIgnorePeriod: {
                         type: 'number',
                         label: 'Minimum session duration to include in the review rate average (min)',
                         hover_tip: 'The shortest duration of a session that gets included in the review rate average on the summary page.',
-                        default: 3,
+                        default: defaultSettings.averageIgnorePeriod,
                         min: 0
                     }
                 }
@@ -362,7 +371,7 @@ async function main() {
         const wkof_modules = 'Settings,Menu';
         wkof.include(wkof_modules);
         await wkof.ready(wkof_modules)
-            .then(() => wkof.Settings.load(scriptId))
+            .then(() => wkof.Settings.load(scriptId, defaultSettings))
             .then(installSettingsMenu);
         rateShowDelay = parseFloat(wkof.settings[scriptId].rateShowDelay)*60;
     } else {
