@@ -60,7 +60,7 @@ function setCurrentTimerStats() {
     }
 
     const reviewsDoneNumber = parseInt(document.getElementById('completed-count').textContent);
-    const reviewRate = reviewsDoneNumber/time; // reviews/sec
+    const reviewRate = time !== 0 ? reviewsDoneNumber/time : 0; // reviews/sec
     if (showRate) {
         const formattedRate = (reviewRate*3600).toFixed(1); // reviews/hour
         statHtmlElems.rate.span.textContent = (hideRateRemaining ? '—' : formattedRate) + ' r/h';
@@ -144,18 +144,20 @@ function generateStatHtmlElems() {
 }
 
 function setStatsAndUpdateTime() {
-    setCurrentTimerStats();
     time = Math.floor((new Date() - startTime)/1000);
+    setCurrentTimerStats();
 }
 
 function startTimer (intervalSec) {
     startTime = new Date();
+    setStatsAndUpdateTime();
     setInterval(setStatsAndUpdateTime, intervalSec*1000);
 }
 
 function startReviewTimer() {
-    // Start the timer with 1s interval
-    startTimer(1.0);
+    // Start the timer
+    const interval = window.wkof ? parseFloat(wkof.settings[scriptId].updateInterval) : 1.0;
+    startTimer(interval);
 }
 
 function showLastReviewStats() {
@@ -180,7 +182,6 @@ function showLastReviewStats() {
     footer.appendChild(rateDiv);
 }
 
-// TODO: set update interval?
 // TODO: save and calculate average speed
 function openSettings() {
     var config = {
@@ -209,6 +210,13 @@ function openSettings() {
                 label: 'Show remaining time estimate',
                 default: true,
                 hover_tip: 'Show the estimated remaining time based on the review rate and remaining items.',
+            },
+            updateInterval: {
+                type: 'number',
+                label: 'Update interval (s)',
+                default: 1.0,
+                min: 0.1,
+                max: 60
             },
             rateShowDelayGroup: {
                 type: 'group',
