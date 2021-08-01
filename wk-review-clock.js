@@ -220,9 +220,9 @@ function showLastReviewStats() {
     
     // Saved time and rate
     const lastTime = parseFloat(localStorage.getItem(timerTimeKey));
-    const lastTimeStr = getTimeString(splitToHourMinSec(lastTime));
+    const lastTimeStr = isNan(lastTime) ? '—' : getTimeString(splitToHourMinSec(lastTime));
     const lastRate = parseFloat(localStorage.getItem(timerRateKey));
-    const lastRateStr = (lastRate*3600).toFixed(1);
+    const lastRateStr = isNan(lastRate) ? '—' : (lastRate*3600).toFixed(1);
 
     // Average rate
     const avgStats = getAverageStats();
