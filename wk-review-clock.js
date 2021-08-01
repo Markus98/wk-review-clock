@@ -12,7 +12,7 @@
 
 let statHtmlElems;
 let time;
-let wkOpenFrameWorkLoaded = false;
+let rateShowDelay;
 
 const timerTimeKey = 'reviewTimerTime';
 const timerRateKey = 'reviewTimerRate';
@@ -49,10 +49,13 @@ function setCurrentTimerStats() {
     let showTimer = true;
     let showRate = true;
     let showRemaining = true;
-    if (wkOpenFrameWorkLoaded) {
+    let hideRateRemaining = false;
+    if (window.wkof) {
         showTimer = wkof.settings[scriptId].showTimer;
         showRate = wkof.settings[scriptId].showRate;
         showRemaining = wkof.settings[scriptId].showRemaining;
+        const enableRateShowDelay = wkof.settings[scriptId].enableRateShowDelay;
+        hideRateRemaining = enableRateShowDelay && time<rateShowDelay;
     }
     
     const hourMinSec = splitToHourMinSec(time);
@@ -64,14 +67,16 @@ function setCurrentTimerStats() {
     const reviewRate = reviewsDoneNumber/time; // reviews/sec
     if (showRate) {
         const formattedRate = (reviewRate*3600).toFixed(1); // reviews/hour
-        statHtmlElems.rate.span.textContent = formattedRate + ' r/h';
+        statHtmlElems.rate.span.textContent = (hideRateRemaining ? '—' : formattedRate) + ' r/h';
     }
 
     const reviewsAvailableNumber = parseInt(document.getElementById('available-count').textContent);
     const timeRemaining = reviewsAvailableNumber / reviewRate; // seconds
     if (showRemaining) {
         let remainingStr = 'Est. ';
-        if (Number.isFinite(timeRemaining)) {
+        if (hideRateRemaining) {
+            remainingStr += '—';
+        } else if (Number.isFinite(timeRemaining)) {
             remainingStr += getTimeString(splitToHourMinSec(timeRemaining), false);
         } else {
             remainingStr += '∞';
@@ -117,7 +122,7 @@ function generateStatHtmlElems() {
             span: remainingSpan
         },
         updateVisibility: function() {
-            if (!wkOpenFrameWorkLoaded) return;
+            if (!window.wkof) return;
             const settings = wkof.settings[scriptId];
             if (settings) {
                 const disp = (bool) => bool ? '' : 'display: none;';
@@ -180,6 +185,8 @@ function showLastReviewStats() {
     footer.appendChild(rateDiv);
 }
 
+// TODO: set update interval?
+// TODO: change to timestamp
 function openSettings() {
     var config = {
         script_id: scriptId,
@@ -187,25 +194,48 @@ function openSettings() {
         on_save: () => {
             wkof.Settings.save(scriptId);
             statHtmlElems.updateVisibility();
+            rateShowDelay = parseFloat(wkof.settings[scriptId].rateShowDelay)*60;
         },
         content: {
             showTimer: {
                 type: 'checkbox',
-                label: 'Show timer',
+                label: 'Show elapsed time',
                 default: true,
                 hover_tip: 'Show the elapsed time during a review session.',
             },
             showRate: {
                 type: 'checkbox',
-                label: 'Show review speed',
+                label: 'Show review rate',
                 default: true,
                 hover_tip: 'Show the review rate (reviews/hour).',
             },
             showRemaining: {
                 type: 'checkbox',
-                label: 'Show remaining timer',
+                label: 'Show remaining time estimate',
                 default: true,
                 hover_tip: 'Show the estimated remaining time based on the review rate and remaining items.',
+            },
+            rateShowDelayGroup: {
+                type: 'group',
+                label: 'Review rate and remaining time show delay',
+                content: {
+                    rateShowDelaySection: {
+                        type: 'section',
+                        label: 'Only show the review rate and remaining time statistics after a time delay.'
+                    },
+                    enableRateShowDelay: {
+                        type: 'checkbox',
+                        label: 'Enabled',
+                        default: false,
+                        hover_tip: 'Enable a delay in showing the rate and time estimate.'
+                    },
+                    rateShowDelay: {
+                        type: 'number',
+                        label: 'Delay (min)',
+                        default: 5,
+                        min: 1
+                    }
+                }
             }
         }
     }
@@ -223,19 +253,16 @@ function installSettingsMenu() {
 }
 
 async function main() {
-    try {
+    if (window.wkof) {
         const wkof_modules = 'Settings,Menu';
         wkof.include(wkof_modules);
-        wkOpenFrameWorkLoaded = true;
         await wkof.ready(wkof_modules)
             .then(() => wkof.Settings.load(scriptId))
             .then(installSettingsMenu);
-    } catch (err) {
-        if (err instanceof ReferenceError) {
-            console.warn('Wanikani Open FrameWork required for adjusting WaniKani Review Clock settings.');
-        } else {
-            throw err;
-        }
+        rateShowDelay = parseFloat(wkof.settings[scriptId].rateShowDelay)*60;
+    } else {
+        console.warn('WaniKani Review Clock: Wanikani Open FrameWork required for adjusting settings. '
+            + 'Installation instructions can be found here: https://community.wanikani.com/t/installing-wanikani-open-framework/28549');
     }
 
     if(/session$/.exec(window.location.href)) { // review page
