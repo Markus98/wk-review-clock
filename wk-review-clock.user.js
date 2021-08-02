@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name        WaniKani Review Clock
 // @namespace   wkreviewclock
-// @description 
+// @description Adds a clock to WaniKani review session statistics and estimates the remaining time.
 // @include     http://www.wanikani.com/review*
 // @include     https://www.wanikani.com/review*
-// @version     0.1
+// @version     1.0
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
