@@ -8,6 +8,7 @@
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
+// @source      https://github.com/Markus98/wk-review-clock
 // ==/UserScript==
 
 let statHtmlElems;
