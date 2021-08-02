@@ -216,7 +216,11 @@ function showLastReviewStats() {
     timeDiv.appendChild(timeSpan);
     rateDiv.appendChild(rateSpan);
     const estimatedTimeDiv = document.createElement('div');
-    estimatedTimeDiv.style.cssText = 'text-align: center; margin-top: -88%; font-size: 0.6em;';
+    estimatedTimeDiv.style.cssText = 'font-size: 0.6em; position: relative; top: -70%;';
+
+    // Center text in review queue count
+    const reviewCountSpan = document.getElementById('review-queue-count');
+    reviewCountSpan.style.cssText += 'text-align: center;';
     
     // Reset button
     const resetAvgButton = document.createElement('button');
@@ -246,7 +250,6 @@ function showLastReviewStats() {
     const avgRate = avgStats.rateSum / avgStats.reviews; // reviews/second
     const avgRateStr = isNaN(avgRate) ? '—' : (parseFloat(avgRate)*3600).toFixed(1);
 
-    const reviewCountSpan = document.getElementById('review-queue-count');
     // Estimate time for current reviews
     const numOfReviews = parseInt(reviewCountSpan.textContent);
     const estimatedTime = numOfReviews / avgRate;
@@ -255,7 +258,9 @@ function showLastReviewStats() {
     // Set stats text content
     timeSpan.textContent = `Duration: ${lastTimeStr}`;
     rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour (avg. ${avgRateStr} r/h) (${avgStats.reviews} sessions)`;
-    estimatedTimeDiv.textContent = !showEstimatedSessionTime || isNaN(estimatedTime) ? '' : `~${estimatedTimeStr}`;
+    estimatedTimeDiv.textContent = 
+        !showEstimatedSessionTime || isNaN(estimatedTime) || numOfReviews === 0 ? 
+        '' : `~${estimatedTimeStr}`;
 
     // Append html elements to page
     footer.appendChild(timeDiv);
