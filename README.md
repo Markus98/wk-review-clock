@@ -15,3 +15,7 @@ The settings menu is implemented with this framework, thus it is needed to adjus
 
 ## Screenshots and more information
 There is additional information on the [userscript announcement post](https://community.wanikani.com/t/userscript-wanikani-review-clock/52812) on the WaniKani Community forums.
+
+## TODO:
+- [ ] start timer after first question answered?
+- [ ] pause timer feature?
