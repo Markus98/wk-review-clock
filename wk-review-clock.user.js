@@ -378,8 +378,7 @@ function openSettings() {
                         label: 'Statistics update interval (s)',
                         hover_tip: 'How often the statistic numbers should be updated (x second intervals).',
                         default: defaultSettings.updateInterval,
-                        min: 0.03,
-                        max: 60
+                        min: 0.01
                     },
                     rateShowDelayGroup: {
                         type: 'group',
@@ -400,7 +399,7 @@ function openSettings() {
                                 label: 'Duration (min)',
                                 hover_tip: 'The number of minutes that the review rate and time estimate should be hidden for at the beginning of a session.',
                                 default: defaultSettings.rateShowDelay,
-                                min: 1
+                                min: 0
                             }
                         }
                     }
