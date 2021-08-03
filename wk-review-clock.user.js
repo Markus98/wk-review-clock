@@ -4,7 +4,7 @@
 // @description Adds a clock to WaniKani review session statistics and estimates the remaining time.
 // @include     http://www.wanikani.com/review*
 // @include     https://www.wanikani.com/review*
-// @version     1.0
+// @version     1.1
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
@@ -22,6 +22,8 @@ const averageStatsKey = 'reviewRateAverageStats';
 const scriptId = 'WKReviewClock'
 
 const defaultSettings = {
+    units: 'rph',
+    location: 'toprightright',
     showTimer: true,
     showRate: true,
     showRemaining: true,
@@ -75,8 +77,8 @@ function setCurrentTimerStats() {
     const reviewsDoneNumber = parseInt(document.getElementById('completed-count').textContent);
     const reviewRate = time !== 0 ? reviewsDoneNumber/time : 0; // reviews/sec
     if (showRate) {
-        const formattedRate = (reviewRate*3600).toFixed(1); // reviews/hour
-        statHtmlElems.rate.span.textContent = (hideRateRemaining ? '—' : formattedRate) + ' r/h';
+        const formattedRate = formatRate(reviewRate, 'short');
+        statHtmlElems.rate.span.textContent = (hideRateRemaining ? '—' : formattedRate) + '';
     }
 
     const reviewsAvailableNumber = parseInt(document.getElementById('available-count').textContent);
@@ -147,7 +149,21 @@ function generateStatHtmlElems() {
     statHtmlElems.updateVisibility();
 
     // append statsDiv to header
-    const header = document.getElementById('stats');
+    let parent;
+    const header = document.createElement('span');
+    const location = window.wkof ? wkof.settings[scriptId].location : defaultSettings.location;
+    if (location == 'toprightright') {
+        parent = document.getElementById('stats');
+        parent.append(header);
+    } else if (location == 'toprightleft') {
+        parent = document.getElementById('stats');
+        parent.prepend(header);
+        header.style.cssText = 'margin-right: 2em';
+    } else if (location == 'bottom') {
+        parent = document.getElementById('reviews');
+        parent.append(header);
+        header.classList.add('wkrc_bottom');
+    }
     header.appendChild(statHtmlElems.timer.icon);
     header.appendChild(statHtmlElems.timer.span);
     header.appendChild(statHtmlElems.rate.icon);
@@ -193,7 +209,7 @@ function setAverageRecentAdded(bool) {
 
 function startReviewTimer() {
     // Start the timer
-    const interval = window.wkof ? parseFloat(wkof.settings[scriptId].updateInterval) : 1.0;
+    const interval = window.wkof ? parseFloat(wkof.settings[scriptId].updateInterval) : defaultSettings.updateInterval;
     startTimer(interval);
     setAverageRecentAdded(false);
 }
@@ -238,7 +254,7 @@ function showLastReviewStats() {
     const lastTime = parseFloat(localStorage.getItem(timerTimeKey));
     const lastTimeStr = isNaN(lastTime) ? '—' : getTimeString(splitToHourMinSec(lastTime));
     const lastRate = parseFloat(localStorage.getItem(timerRateKey));
-    const lastRateStr = isNaN(lastRate) ? '—' : (lastRate*3600).toFixed(1);
+    const lastRateStr = formatRate(lastRate);
 
     // Average rate
     const avgStats = getAverageStats();
@@ -249,7 +265,7 @@ function showLastReviewStats() {
         setAverageStats(avgStats);
     }
     const avgRate = avgStats.rateSum / avgStats.reviews; // reviews/second
-    const avgRateStr = isNaN(avgRate) ? '—' : (parseFloat(avgRate)*3600).toFixed(1);
+    const avgRateStr = formatRate(avgRate, 'short');
 
     // Estimate time for current reviews
     const numOfReviews = parseInt(reviewCountSpan.textContent);
@@ -258,7 +274,7 @@ function showLastReviewStats() {
     
     // Set stats text content
     timeSpan.textContent = `Duration: ${lastTimeStr}`;
-    rateSpan.textContent = `Review rate: ${lastRateStr} reviews per hour (avg. ${avgRateStr} r/h) (${avgStats.reviews} sessions)`;
+    rateSpan.textContent = `Review rate: ${lastRateStr} (avg. ${avgRateStr}) (${avgStats.reviews} sessions)`;
     estimatedTimeDiv.textContent = 
         !showEstimatedSessionTime || isNaN(estimatedTime) || numOfReviews === 0 ? 
         '' : `~${estimatedTimeStr}`;
@@ -268,6 +284,30 @@ function showLastReviewStats() {
     footer.appendChild(rateDiv);
     footer.appendChild(resetAvgButton);
     reviewCountSpan.appendChild(estimatedTimeDiv);
+}
+
+let shortUnitNames = {'rph': 'r/h', 'rpm': 'r/m', 'mp100r': 'm/100r'}
+let unitNames = {'rph': 'reviews/hr', 'rpm': 'reviews/min', 'mp100r': 'min/100 reviews'}
+function formatRate(rps, format) {
+    if (isNaN(rps) || rps < 0.00001) {
+        return '—';
+    }
+    rps = parseFloat(rps);
+    const units = window.wkof ? wkof.settings[scriptId].units : defaultSettings.units;
+    let res;
+    if (units == 'rph') {
+        res = rps*3600;
+    } else if (units == 'rpm') {
+        res = rps*60;
+    } else if (units == 'mp100r') {
+        res = 1/rps/60*100;
+    }
+    if (format == 'short') {
+        return res.toFixed(1) + ' ' + shortUnitNames[units];
+    } else {
+        return res.toFixed(1) + ' ' + unitNames[units];
+    }
+
 }
 
 function openSettings() {
@@ -280,10 +320,38 @@ function openSettings() {
             rateShowDelay = parseFloat(wkof.settings[scriptId].rateShowDelay)*60;
         },
         content: {
+            general: {
+                type: 'page',
+                label: 'General',
+                content: {
+                    units: {
+                        type: 'dropdown',
+                        label: 'Units for Speed',
+                        default: defaultSettings.units,
+                        hover_tip: 'What units the review rate of completion should be displayed in.',
+                        content: {
+                            rph: 'reviews/hr',
+                            rpm: 'reviews/min',
+                            mp100r: 'min/100 reviews',
+                        }
+                    },
+                }
+            },
             reviewPage: {
                 type: 'page',
                 label: 'Review Page',
                 content: {
+                    location: {
+                        type: 'dropdown',
+                        label: 'Display Location',
+                        default: defaultSettings.location,
+                        hover_tip: 'Where to show the below items (if checked) during reviews.',
+                        content: {
+                            toprightright: 'top right (right of other stats)',
+                            toprightleft: 'top right (left of other stats)',
+                            bottom: 'bottom in gray font',
+                        }
+                    },
                     showTimer: {
                         type: 'checkbox',
                         label: 'Show elapsed time',
@@ -310,8 +378,7 @@ function openSettings() {
                         label: 'Statistics update interval (s)',
                         hover_tip: 'How often the statistic numbers should be updated (x second intervals).',
                         default: defaultSettings.updateInterval,
-                        min: 0.03,
-                        max: 60
+                        min: 0.01
                     },
                     rateShowDelayGroup: {
                         type: 'group',
@@ -332,7 +399,7 @@ function openSettings() {
                                 label: 'Duration (min)',
                                 hover_tip: 'The number of minutes that the review rate and time estimate should be hidden for at the beginning of a session.',
                                 default: defaultSettings.rateShowDelay,
-                                min: 1
+                                min: 0
                             }
                         }
                     }
@@ -384,6 +451,12 @@ async function main() {
         console.warn('WaniKani Review Clock: Wanikani Open FrameWork required for adjusting settings. '
             + 'Installation instructions can be found here: https://community.wanikani.com/t/installing-wanikani-open-framework/28549');
     }
+
+    const style = document.createElement('style');
+    style.textContent = '.wkrc_bottom i { margin-right: 0.5em; margin-left: 0.8em; }' +
+        '.wkrc_bottom span { margin-right: 0.5em; }' +
+        '.wkrc_bottom { color:#BBB; letter-spacing: initial; display: block; text-align: center; }';
+    document.head.append(style);
 
     if(/session$/.exec(window.location.href)) { // review page
         await generateStatHtmlElems();
