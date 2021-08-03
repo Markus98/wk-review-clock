@@ -151,7 +151,7 @@ function generateStatHtmlElems() {
     // append statsDiv to header
     let parent;
     const header = document.createElement('span');
-    const location = wkof.settings[scriptId].location;
+    const location = window.wkof ? wkof.settings[scriptId].location : defaultSettings.location;
     if (location == 'toprightright') {
         parent = document.getElementById('stats');
         parent.append(header);
@@ -209,7 +209,7 @@ function setAverageRecentAdded(bool) {
 
 function startReviewTimer() {
     // Start the timer
-    const interval = window.wkof ? parseFloat(wkof.settings[scriptId].updateInterval) : 1.0;
+    const interval = window.wkof ? parseFloat(wkof.settings[scriptId].updateInterval) : defaultSettings.updateInterval;
     startTimer(interval);
     setAverageRecentAdded(false);
 }
@@ -293,7 +293,7 @@ function formatRate(rps, format) {
         return '—';
     }
     rps = parseFloat(rps);
-    const units = wkof.settings[scriptId].units;
+    const units = window.wkof ? wkof.settings[scriptId].units : defaultSettings.units;
     let res;
     if (units == 'rph') {
         res = rps*3600;
