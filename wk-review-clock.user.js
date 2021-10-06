@@ -4,7 +4,7 @@
 // @description Adds a clock to WaniKani review session statistics and estimates the remaining time.
 // @include     http://www.wanikani.com/review*
 // @include     https://www.wanikani.com/review*
-// @version     1.1
+// @version     1.2
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
@@ -103,19 +103,19 @@ function setCurrentTimerStats() {
 function generateStatHtmlElems() {
     // Timer time
     const timerIcon = document.createElement('i');
-    timerIcon.className = 'icon-time';
+    timerIcon.className = 'fa fa-clock-o';
     const timerSpan = document.createElement('span');
     timerSpan.id = 'wkReviewTimerTimerSpan';
 
     // Review completion rate
     const rateIcon = document.createElement('i');
-    rateIcon.className = 'icon-bolt';
+    rateIcon.className = 'fa fa-bolt';
     const rateSpan = document.createElement('span');
     rateSpan.id = 'wkReviewTimerRateSpan';
 
     // Timer estimated remaining
     const remainingIcon = document.createElement('i');
-    remainingIcon.className = 'icon-time';
+    remainingIcon.className = 'fa fa-clock-o';
     const remainingSpan = document.createElement('span');
     remainingSpan.id = 'wkReviewTimerRemainingSpan';
 
