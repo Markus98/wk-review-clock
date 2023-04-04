@@ -2,9 +2,9 @@
 // @name        WaniKani Review Clock
 // @namespace   wkreviewclock
 // @description Adds a clock to WaniKani review session statistics and estimates the remaining time.
-// @include     http://www.wanikani.com/review*
-// @include     https://www.wanikani.com/review*
-// @version     1.2
+// @match       http://www.wanikani.com/subjects/review
+// @match       https://www.wanikani.com/subjects/review
+// @version     1.3
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
@@ -19,7 +19,7 @@ let rateShowDelay;
 const timerTimeKey = 'reviewTimerTime';
 const timerRateKey = 'reviewTimerRate';
 const averageStatsKey = 'reviewRateAverageStats';
-const scriptId = 'WKReviewClock'
+const scriptId = 'WKReviewClock';
 
 const defaultSettings = {
     units: 'rph',
@@ -31,7 +31,7 @@ const defaultSettings = {
     enableRateShowDelay: false,
     rateShowDelay: 5,
     showTimeEstimate: true,
-    averageIgnorePeriod: 3
+    averageIgnorePeriod: 3,
 };
 
 function splitToHourMinSec(timeSec) {
@@ -45,7 +45,7 @@ function getTimeString(hourMinSec, includeSec=true) {
     const { h, min, sec } = hourMinSec;
 
     const hourString = h ? h+'h ' : '';
-    
+
     const minuteZero = h ? '0' : '';
     const minuteString = (h||min||!includeSec) ? (minuteZero+min).slice(-2)+'m ' : '';
 
@@ -68,20 +68,24 @@ function setCurrentTimerStats() {
         const enableRateShowDelay = wkof.settings[scriptId].enableRateShowDelay;
         hideRateRemaining = enableRateShowDelay && time<rateShowDelay;
     }
-    
+
     const hourMinSec = splitToHourMinSec(time);
     if (showTimer) {
-        statHtmlElems.timer.span.textContent =  getTimeString(hourMinSec);
+        statHtmlElems.timer.label.textContent = getTimeString(hourMinSec);
     }
 
-    const reviewsDoneNumber = parseInt(document.getElementById('completed-count').textContent);
+    const reviewsDoneNumber = parseInt(
+        document.querySelector('[data-quiz-statistics-target="completeCount"]').textContent
+    );
     const reviewRate = time !== 0 ? reviewsDoneNumber/time : 0; // reviews/sec
     if (showRate) {
         const formattedRate = formatRate(reviewRate, 'short');
-        statHtmlElems.rate.span.textContent = (hideRateRemaining ? '—' : formattedRate) + '';
+        statHtmlElems.rate.label.textContent = (hideRateRemaining ? '—' : formattedRate) + '';
     }
 
-    const reviewsAvailableNumber = parseInt(document.getElementById('available-count').textContent);
+    const reviewsAvailableNumber = parseInt(
+        document.querySelector('[data-quiz-statistics-target="remainingCount"]').textContent
+    );
     const timeRemaining = reviewsAvailableNumber / reviewRate; // seconds
     if (showRemaining) {
         let remainingStr = 'Est. ';
@@ -92,7 +96,7 @@ function setCurrentTimerStats() {
         } else {
             remainingStr += '∞';
         }
-        statHtmlElems.remaining.span.textContent = remainingStr;
+        statHtmlElems.remaining.label.textContent = remainingStr;
     }
 
     // Set time and rate to localstorage for diplaying them later
@@ -101,75 +105,73 @@ function setCurrentTimerStats() {
 }
 
 function generateStatHtmlElems() {
-    // Timer time
-    const timerIcon = document.createElement('i');
-    timerIcon.className = 'fa fa-clock-o';
-    const timerSpan = document.createElement('span');
-    timerSpan.id = 'wkReviewTimerTimerSpan';
+    function genStatDiv(title, iconClassName) {
+        const statDiv = document.createElement('div');
+        statDiv.title = title;
+        statDiv.className = 'quiz-statistics__item';
+        const statCountDiv = document.createElement('div');
+        statCountDiv.className = 'quiz-statistics__item-count';
+        const statCountIconDiv = document.createElement('div');
+        statCountIconDiv.className = 'quiz-statistics__item-count-icon';
+        const statIcon = document.createElement('i');
+        statIcon.className = iconClassName;
+        const statLabelDiv = document.createElement('div');
+        statLabelDiv.className = 'quiz-statistics__item-count-text';
+        statLabelDiv.style.cssText = 'white-space: nowrap;';
 
-    // Review completion rate
-    const rateIcon = document.createElement('i');
-    rateIcon.className = 'fa fa-bolt';
-    const rateSpan = document.createElement('span');
-    rateSpan.id = 'wkReviewTimerRateSpan';
-
-    // Timer estimated remaining
-    const remainingIcon = document.createElement('i');
-    remainingIcon.className = 'fa fa-clock-o';
-    const remainingSpan = document.createElement('span');
-    remainingSpan.id = 'wkReviewTimerRemainingSpan';
+        statDiv.appendChild(statCountDiv);
+        statCountDiv.appendChild(statCountIconDiv);
+        statCountDiv.appendChild(statLabelDiv);
+        statCountIconDiv.appendChild(statIcon);
+        return {
+            div: statDiv,
+            label: statLabelDiv,
+        };
+    }
+    // Create statistics divs
+    const timer = genStatDiv('elapsed time', 'fa fa-clock-o');
+    const rate = genStatDiv('review rate', 'fa fa-bolt');
+    const remaining = genStatDiv('estimated remaining time', 'fa fa-clock-o');
 
     statHtmlElems = {
-        timer: {
-            icon: timerIcon,
-            span: timerSpan
-        },
-        rate: {
-            icon: rateIcon,
-            span: rateSpan
-        },
-        remaining: {
-            icon: remainingIcon,
-            span: remainingSpan
-        },
+        timer: timer,
+        rate: rate,
+        remaining: remaining,
         updateVisibility: function() {
             if (!window.wkof) return;
             const settings = wkof.settings[scriptId];
             if (settings) {
                 const disp = (bool) => bool ? '' : 'display: none;';
-                this.timer.icon.style.cssText = disp(settings.showTimer);
-                this.timer.span.style.cssText = disp(settings.showTimer);
-                this.rate.icon.style.cssText = disp(settings.showRate);
-                this.rate.span.style.cssText = disp(settings.showRate);
-                this.remaining.icon.style.cssText = disp(settings.showRemaining);
-                this.remaining.span.style.cssText = disp(settings.showRemaining);
+                this.timer.div.style.cssText = disp(settings.showTimer);
+                this.rate.div.style.cssText = disp(settings.showRate);
+                this.remaining.div.style.cssText = disp(settings.showRemaining);
             }
         }
     }
     statHtmlElems.updateVisibility();
 
-    // append statsDiv to header
-    let parent;
-    const header = document.createElement('span');
+    // append divs to appropriate parent
     const location = window.wkof ? wkof.settings[scriptId].location : defaultSettings.location;
     if (location == 'toprightright') {
-        parent = document.getElementById('stats');
-        parent.append(header);
+        const parent = document.getElementsByClassName('quiz-statistics')[0];
+        parent.appendChild(timer.div);
+        parent.appendChild(rate.div);
+        parent.appendChild(remaining.div);
     } else if (location == 'toprightleft') {
-        parent = document.getElementById('stats');
-        parent.prepend(header);
-        header.style.cssText = 'margin-right: 2em';
+        const parent = document.getElementsByClassName('quiz-statistics')[0];
+        parent.prepend(remaining.div);
+        parent.prepend(rate.div);
+        parent.prepend(timer.div);
     } else if (location == 'bottom') {
-        parent = document.getElementById('reviews');
-        parent.append(header);
-        header.classList.add('wkrc_bottom');
+        const parent = document.getElementById('additional-content');
+        const bottomMenu = document.createElement('div');
+        bottomMenu.style.cssText = 'display: flex; justify-content: center; padding: 10px;';
+        bottomMenu.appendChild(timer.div);
+        bottomMenu.appendChild(rate.div);
+        bottomMenu.appendChild(remaining.div);
+        bottomMenu.className = "additional-content__menu wkrc_bottom"
+        parent.append(bottomMenu);
     }
-    header.appendChild(statHtmlElems.timer.icon);
-    header.appendChild(statHtmlElems.timer.span);
-    header.appendChild(statHtmlElems.rate.icon);
-    header.appendChild(statHtmlElems.rate.span);
-    header.appendChild(statHtmlElems.remaining.icon);
-    header.appendChild(statHtmlElems.remaining.span);
 }
 
 function setStatsAndUpdateTime() {
@@ -214,6 +216,9 @@ function startReviewTimer() {
     setAverageRecentAdded(false);
 }
 
+/**
+ * @deprecated
+ */
 function showLastReviewStats() {
     const footer = document.getElementById('last-session-date');
 
@@ -405,25 +410,6 @@ function openSettings() {
                     }
                 }
             },
-            summaryPage: {
-                type: 'page',
-                label: 'Summary Page',
-                content: {
-                    showTimeEstimate: {
-                        type: 'checkbox',
-                        label: 'Show review time estimate on summary page',
-                        default: defaultSettings.showTimeEstimate,
-                        hover_tip: 'Show the estimated time to complete all items in the queue on the summary page. Based on average review rate.',
-                    },
-                    averageIgnorePeriod: {
-                        type: 'number',
-                        label: 'Minimum session duration to include in the review rate average (min)',
-                        hover_tip: 'The shortest duration of a session that gets included in the review rate average on the summary page.',
-                        default: defaultSettings.averageIgnorePeriod,
-                        min: 0
-                    }
-                }
-            }
         }
     }
     var dialog = new wkof.Settings(config);
@@ -458,11 +444,11 @@ async function main() {
         '.wkrc_bottom { color:#BBB; letter-spacing: initial; display: block; text-align: center; }';
     document.head.append(style);
 
-    if(/session$/.exec(window.location.href)) { // review page
+    if(/subjects\/review$/.exec(window.location.href)) { // review page
         await generateStatHtmlElems();
         startReviewTimer();
     } else { // review summary page
-        showLastReviewStats();
+        // showLastReviewStats();
     }
 }
 
