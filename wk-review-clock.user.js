@@ -4,7 +4,7 @@
 // @description Adds a clock to WaniKani review session statistics and estimates the remaining time.
 // @match       http://www.wanikani.com/subjects/review
 // @match       https://www.wanikani.com/subjects/review
-// @version     1.3
+// @version     1.4
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
@@ -71,7 +71,7 @@ function setCurrentTimerStats() {
 
     const hourMinSec = splitToHourMinSec(time);
     if (showTimer) {
-        statHtmlElems.timer.label.textContent = getTimeString(hourMinSec);
+        statHtmlElems.timer.getLabel().textContent = getTimeString(hourMinSec);
     }
 
     const reviewsDoneNumber = parseInt(
@@ -80,7 +80,7 @@ function setCurrentTimerStats() {
     const reviewRate = time !== 0 ? reviewsDoneNumber/time : 0; // reviews/sec
     if (showRate) {
         const formattedRate = formatRate(reviewRate, 'short');
-        statHtmlElems.rate.label.textContent = (hideRateRemaining ? '—' : formattedRate) + '';
+        statHtmlElems.rate.getLabel().textContent = (hideRateRemaining ? '—' : formattedRate) + '';
     }
 
     const reviewsAvailableNumber = parseInt(
@@ -96,7 +96,7 @@ function setCurrentTimerStats() {
         } else {
             remainingStr += '∞';
         }
-        statHtmlElems.remaining.label.textContent = remainingStr;
+        statHtmlElems.remaining.getLabel().textContent = remainingStr;
     }
 
     // Set time and rate to localstorage for diplaying them later
@@ -105,8 +105,10 @@ function setCurrentTimerStats() {
 }
 
 function generateStatHtmlElems() {
-    function genStatDiv(title, iconClassName) {
+    function genStatDiv(title, iconClassName, idSuffix) {
         const statDiv = document.createElement('div');
+        const statDivId = 'wk-review-clock-markus98_stat-div-' + idSuffix;
+        statDiv.id = statDivId;
         statDiv.title = title;
         statDiv.className = 'quiz-statistics__item';
         const statCountDiv = document.createElement('div');
@@ -116,6 +118,8 @@ function generateStatHtmlElems() {
         const statIcon = document.createElement('i');
         statIcon.className = iconClassName;
         const statLabelDiv = document.createElement('div');
+        const labelId = 'wk-review-clock-markus98_label-' + idSuffix;
+        statLabelDiv.id = labelId;
         statLabelDiv.className = 'quiz-statistics__item-count-text';
         statLabelDiv.style.cssText = 'white-space: nowrap;';
 
@@ -125,13 +129,18 @@ function generateStatHtmlElems() {
         statCountIconDiv.appendChild(statIcon);
         return {
             div: statDiv,
-            label: statLabelDiv,
+            getLabel: function () {
+                return document.getElementById(labelId);
+            },
+            getDiv: function () {
+                return document.getElementById(statDivId);
+            },
         };
     }
     // Create statistics divs
-    const timer = genStatDiv('elapsed time', 'fa fa-clock-o');
-    const rate = genStatDiv('review rate', 'fa fa-bolt');
-    const remaining = genStatDiv('estimated remaining time', 'fa fa-clock-o');
+    const timer = genStatDiv('elapsed time', 'fa fa-clock-o', 'timer');
+    const rate = genStatDiv('review rate', 'fa fa-bolt', 'rate');
+    const remaining = genStatDiv('estimated remaining time', 'fa fa-clock-o', 'remaining');
 
     statHtmlElems = {
         timer: timer,
@@ -142,13 +151,12 @@ function generateStatHtmlElems() {
             const settings = wkof.settings[scriptId];
             if (settings) {
                 const disp = (bool) => bool ? '' : 'display: none;';
-                this.timer.div.style.cssText = disp(settings.showTimer);
-                this.rate.div.style.cssText = disp(settings.showRate);
-                this.remaining.div.style.cssText = disp(settings.showRemaining);
+                this.timer.getDiv().style.cssText = disp(settings.showTimer);
+                this.rate.getDiv().style.cssText = disp(settings.showRate);
+                this.remaining.getDiv().style.cssText = disp(settings.showRemaining);
             }
         }
     }
-    statHtmlElems.updateVisibility();
 
     // append divs to appropriate parent
     const location = window.wkof ? wkof.settings[scriptId].location : defaultSettings.location;
@@ -172,6 +180,7 @@ function generateStatHtmlElems() {
         bottomMenu.className = "additional-content__menu wkrc_bottom"
         parent.append(bottomMenu);
     }
+    statHtmlElems.updateVisibility();
 }
 
 function setStatsAndUpdateTime() {
