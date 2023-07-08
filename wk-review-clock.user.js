@@ -4,6 +4,8 @@
 // @description Adds a clock to WaniKani review session statistics and estimates the remaining time.
 // @match       http://www.wanikani.com/subjects/review
 // @match       https://www.wanikani.com/subjects/review
+// @match       http://www.wanikani.com/subjects/extra_study?queue_type=*
+// @match       https://www.wanikani.com/subjects/extra_study?queue_type=*
 // @version     1.4
 // @author      Markus Tuominen
 // @grant       none
@@ -453,7 +455,7 @@ async function main() {
         '.wkrc_bottom { color:#BBB; letter-spacing: initial; display: block; text-align: center; }';
     document.head.append(style);
 
-    if(/subjects\/review$/.exec(window.location.href)) { // review page
+    if(/subjects\/(review|extra_study\?queue_type=.*)$/.exec(window.location.href)) { // review page
         await generateStatHtmlElems();
         startReviewTimer();
     } else { // review summary page
