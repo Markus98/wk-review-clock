@@ -6,7 +6,7 @@
 // @match       https://www.wanikani.com/subjects/review
 // @match       http://www.wanikani.com/subjects/extra_study?queue_type=*
 // @match       https://www.wanikani.com/subjects/extra_study?queue_type=*
-// @version     1.4
+// @version     1.5
 // @author      Markus Tuominen
 // @grant       none
 // @license     GPL version 3 or later: http://www.gnu.org/copyleft/gpl.html
